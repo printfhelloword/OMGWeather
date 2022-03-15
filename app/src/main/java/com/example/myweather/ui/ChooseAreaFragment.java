@@ -2,6 +2,7 @@ package com.example.myweather.ui;
 
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +27,7 @@ import com.example.myweather.util.Utility;
 import org.litepal.crud.DataSupport;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.Call;
@@ -33,6 +35,7 @@ import okhttp3.Callback;
 import okhttp3.Response;
 
 public class ChooseAreaFragment extends Fragment {
+    private static final String TAG = "ChooseAreaFragment";
 
     public static final int LEVEL_PROVINCE = 0;
     public static final int LEVEL_CITY = 1;
@@ -43,7 +46,7 @@ public class ChooseAreaFragment extends Fragment {
     private Button backButton;
     private ListView listView;
     private ArrayAdapter<String> mAdapter;
-    private List<String> dataList;
+    private List<String> dataList = new ArrayList<>();
 
     /**
      * province列表
@@ -81,11 +84,15 @@ public class ChooseAreaFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.choose_area, container, false);
-        titleText = (TextView) view.findViewById(R.id.title_text);
-        backButton = (Button) view.findViewById(R.id.back_button);
-        listView = (ListView) view.findViewById(R.id.list_view);
-        mAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);
-        listView.setAdapter(mAdapter);
+        try{
+            titleText = (TextView) view.findViewById(R.id.title_text);
+            backButton = (Button) view.findViewById(R.id.back_button);
+            listView = (ListView) view.findViewById(R.id.list_view);
+            mAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);
+            listView.setAdapter(mAdapter);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
         return view;
     }
 
@@ -122,7 +129,7 @@ public class ChooseAreaFragment extends Fragment {
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
         mProvinceList = DataSupport.findAll(Province.class);
-        if (mProvinceList.size() > 0) {
+        if (mProvinceList != null && mProvinceList.size() > 0) {
             dataList.clear();
             for (Province province : mProvinceList) {
                 dataList.add(province.getProvinceName());
@@ -179,14 +186,17 @@ public class ChooseAreaFragment extends Fragment {
     }
 
     private void qureyFromServer(String address, final String type) {
-        showProgressDialog();
+        showProgerssDialog();
+        Log.d(TAG, "qureyFromServer: address:"+address);
         HttpUtil.sendOkHttpRequest(address, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+                Log.d(TAG, "onFailure: fail ");
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        closeProgerssDialog();
+                        closeProgressDialog();
                         Toast.makeText(getContext(), "加载失败！！", Toast.LENGTH_SHORT);
                     }
                 });
@@ -195,6 +205,7 @@ public class ChooseAreaFragment extends Fragment {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String responseText = response.body().string();
+                Log.d(TAG, "onResponse: body:"+responseText);
                 boolean result = false;
                 if ("province".equals(type)) {
                     result = Utility.handleProvinceRequest(responseText);
@@ -207,7 +218,8 @@ public class ChooseAreaFragment extends Fragment {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            closeProgerssDialog();
+                            closeProgressDialog();
+                            Toast.makeText(getContext(), "加载成功！！", Toast.LENGTH_SHORT);
                             if ("province".equals(type)) {
                                 queryProvinces();
                             } else if ("city".equals(type)) {
@@ -217,6 +229,16 @@ public class ChooseAreaFragment extends Fragment {
                             }
                         }
                     });
+                } else {
+                    Log.d(TAG, "onResponse: result:"+result);
+                    closeProgressDialog();
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getContext(), "JSON解析出错！！", Toast.LENGTH_SHORT);
+                        }
+                    });
+
                 }
             }
         });
@@ -225,7 +247,7 @@ public class ChooseAreaFragment extends Fragment {
     /**
      * 控制进度条
      */
-    private void closeProgerssDialog() {
+    private void showProgerssDialog() {
         if (mProgressDialog == null) {
             mProgressDialog = new ProgressDialog(getActivity());
             mProgressDialog.setMessage("正在加载......");
@@ -234,7 +256,7 @@ public class ChooseAreaFragment extends Fragment {
         mProgressDialog.show();
     }
 
-    private void showProgressDialog() {
+    private void closeProgressDialog() {
         if (mProgressDialog != null) {
             mProgressDialog.dismiss();
         }

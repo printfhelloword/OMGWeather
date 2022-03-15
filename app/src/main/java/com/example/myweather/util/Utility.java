@@ -1,6 +1,7 @@
 package com.example.myweather.util;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.example.myweather.db.City;
 import com.example.myweather.db.County;
@@ -11,9 +12,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Utility {
-
+    private static final String TAG = "Utility";
     public static boolean handleProvinceRequest(String request) {
-        if (!TextUtils.isEmpty(request)){
+        if (TextUtils.isEmpty(request)){
             return false;
         }
         try {
@@ -24,6 +25,7 @@ public class Utility {
                 province.setProvinceCode(provinceJSONObject.getInt("id"));
                 province.setProvinceName(provinceJSONObject.getString("name"));
                 province.save();
+                Log.d(TAG, "handleProvinceRequest: province "+provinceJSONObject.getString("name"));
             }
             return true;
         } catch (JSONException e) {
@@ -33,7 +35,7 @@ public class Utility {
     }
 
     public static boolean handleCityRequest(String request, int provinceId) {
-        if (!TextUtils.isEmpty(request)){
+        if (TextUtils.isEmpty(request)){
             return false;
         }
         try {
@@ -54,7 +56,7 @@ public class Utility {
     }
 
     public static boolean handleCountyRequest(String request, int cityId) {
-        if (!TextUtils.isEmpty(request)){
+        if (TextUtils.isEmpty(request)){
             return false;
         }
         try {
